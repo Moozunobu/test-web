@@ -3,91 +3,1690 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>爆鳴気キャノン 簡易シミュレーター</title>
+<title>HydroGun Simulator v1.0</title>
 <style>
-    body { font-family: sans-serif; background-color: #f4f4f9; color: #333; padding: 20px; }
-    .container { max-width: 600px; margin: 0 auto; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-    h1 { font-size: 1.5rem; text-align: center; color: #d9534f; }
-    label { display: block; margin-top: 15px; font-weight: bold; }
-    input[type="number"] { width: 100%; padding: 8px; margin-top: 5px; box-sizing: border-box; }
-    button { display: block; width: 100%; padding: 10px; margin-top: 20px; background-color: #5cb85c; color: white; border: none; border-radius: 4px; font-size: 1rem; cursor: pointer; }
-    button:hover { background-color: #4cae4c; }
-    .result-box { margin-top: 20px; padding: 15px; background-color: #eef; border-left: 5px solid #0056b3; }
-    .warning { font-size: 0.85rem; color: #c9302c; margin-top: 15px; border: 1px solid #c9302c; padding: 10px; background-color: #fdf0ef; }
+  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;400;500;600;700&family=Exo+2:wght@200;300;400;600&display=swap');
+
+  :root {
+    --bg-base: #1a1a1f;
+    --bg-panel: #212127;
+    --bg-panel2: #1e1e24;
+    --bg-header: #16161b;
+    --bg-widget: #18181d;
+    --border: #2e2e38;
+    --border-active: #3d8ef8;
+    --accent-blue: #3d8ef8;
+    --accent-cyan: #00d4ff;
+    --accent-orange: #ff6b35;
+    --accent-green: #4ade80;
+    --accent-red: #f87171;
+    --accent-yellow: #fbbf24;
+    --text-primary: #e8e8f0;
+    --text-secondary: #8888a0;
+    --text-muted: #55556a;
+    --highlight: #4a9eff;
+    --panel-shadow: 0 2px 12px rgba(0,0,0,0.6);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg-base);
+    color: var(--text-primary);
+    font-family: 'Exo 2', sans-serif;
+    font-size: 12px;
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── TOP MENUBAR ── */
+  #menubar {
+    background: var(--bg-header);
+    border-bottom: 1px solid var(--border);
+    height: 28px;
+    display: flex;
+    align-items: center;
+    padding: 0 8px;
+    gap: 2px;
+    flex-shrink: 0;
+    z-index: 100;
+  }
+  .menu-logo {
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    font-size: 13px;
+    color: var(--accent-cyan);
+    letter-spacing: 2px;
+    margin-right: 16px;
+    text-transform: uppercase;
+  }
+  .menu-item {
+    padding: 3px 10px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 11px;
+    color: var(--text-secondary);
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 500;
+    transition: all 0.1s;
+  }
+  .menu-item:hover { background: rgba(255,255,255,0.07); color: var(--text-primary); }
+  .menu-sep { width: 1px; height: 16px; background: var(--border); margin: 0 4px; }
+  .menu-right { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+  .status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent-green); box-shadow: 0 0 6px var(--accent-green); animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+  .version-tag { font-family: 'Share Tech Mono', monospace; font-size: 10px; color: var(--text-muted); }
+
+  /* ── TOOLBAR ── */
+  #toolbar {
+    background: var(--bg-panel);
+    border-bottom: 1px solid var(--border);
+    height: 36px;
+    display: flex;
+    align-items: center;
+    padding: 0 8px;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+  .tool-btn {
+    padding: 4px 12px;
+    border-radius: 3px;
+    border: 1px solid transparent;
+    background: var(--bg-widget);
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 600;
+    font-size: 11px;
+    letter-spacing: 0.5px;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .tool-btn:hover { border-color: var(--border-active); color: var(--text-primary); background: #25252d; }
+  .tool-btn.active { border-color: var(--accent-blue); color: var(--accent-blue); background: rgba(61,142,248,0.12); }
+  .tool-btn.run { background: var(--accent-orange); border-color: var(--accent-orange); color: #fff; }
+  .tool-btn.run:hover { background: #ff8555; }
+  .tool-sep { width: 1px; height: 22px; background: var(--border); margin: 0 6px; }
+  .tool-icon { font-size: 13px; }
+  .timeline-area { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+  .frame-display {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    color: var(--accent-cyan);
+    background: var(--bg-widget);
+    border: 1px solid var(--border);
+    padding: 3px 8px;
+    border-radius: 3px;
+    min-width: 80px;
+    text-align: center;
+  }
+
+  /* ── MAIN LAYOUT ── */
+  #main {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+    gap: 0;
+  }
+
+  /* ── LEFT PANEL ── */
+  #left-panel {
+    width: 240px;
+    min-width: 200px;
+    background: var(--bg-panel2);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+  .panel-header {
+    background: var(--bg-header);
+    border-bottom: 1px solid var(--border);
+    padding: 5px 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 600;
+    font-size: 11px;
+    color: var(--text-secondary);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    flex-shrink: 0;
+  }
+  .panel-header .dot { width: 6px; height: 6px; border-radius: 50%; }
+  .panel-content { flex: 1; overflow-y: auto; padding: 8px; }
+  .panel-content::-webkit-scrollbar { width: 4px; }
+  .panel-content::-webkit-scrollbar-track { background: transparent; }
+  .panel-content::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  /* Result widgets */
+  .result-block {
+    background: var(--bg-widget);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 8px 10px;
+    margin-bottom: 8px;
+  }
+  .result-block .rb-title {
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 600;
+    font-size: 10px;
+    color: var(--text-muted);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .result-value {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 20px;
+    font-weight: bold;
+    color: var(--accent-cyan);
+    line-height: 1.1;
+  }
+  .result-unit { font-size: 11px; color: var(--text-muted); margin-left: 4px; }
+  .result-sub { font-size: 10px; color: var(--text-secondary); margin-top: 3px; }
+
+  .meter-bar {
+    height: 6px;
+    background: var(--border);
+    border-radius: 3px;
+    margin-top: 6px;
+    overflow: hidden;
+  }
+  .meter-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.6s cubic-bezier(0.4,0,0.2,1);
+  }
+
+  .data-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 3px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+  .data-row:last-child { border-bottom: none; }
+  .data-label { color: var(--text-muted); font-size: 11px; }
+  .data-val { font-family: 'Share Tech Mono', monospace; font-size: 11px; color: var(--accent-green); }
+
+  /* Log */
+  #log-area {
+    background: var(--bg-widget);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 6px 8px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    min-height: 120px;
+    max-height: 160px;
+    overflow-y: auto;
+    line-height: 1.6;
+  }
+  #log-area::-webkit-scrollbar { width: 3px; }
+  #log-area::-webkit-scrollbar-thumb { background: var(--border); }
+  .log-line { color: var(--text-muted); }
+  .log-line.ok { color: var(--accent-green); }
+  .log-line.warn { color: var(--accent-yellow); }
+  .log-line.err { color: var(--accent-red); }
+  .log-line.info { color: var(--accent-cyan); }
+
+  /* ── CENTER VIEWPORT ── */
+  #viewport {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: var(--bg-base);
+    min-width: 0;
+  }
+
+  .viewport-tabs {
+    display: flex;
+    background: var(--bg-panel);
+    border-bottom: 1px solid var(--border);
+    padding: 0 8px;
+    gap: 2px;
+    flex-shrink: 0;
+  }
+  .vtab {
+    padding: 5px 14px;
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 600;
+    font-size: 11px;
+    color: var(--text-muted);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.15s;
+    letter-spacing: 0.5px;
+    margin-bottom: -1px;
+  }
+  .vtab:hover { color: var(--text-secondary); }
+  .vtab.active { color: var(--accent-blue); border-bottom-color: var(--accent-blue); }
+
+  .view-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* 3D Shape View */
+  #view-3d {
+    flex: 1;
+    position: relative;
+    display: none;
+    background: #111116;
+  }
+  #view-3d.active { display: block; }
+  #canvas3d { width: 100%; height: 100%; display: block; }
+
+  /* 2D Airflow View */
+  #view-2d {
+    flex: 1;
+    position: relative;
+    display: none;
+    background: #0d0d12;
+  }
+  #view-2d.active { display: block; }
+  #canvas2d { width: 100%; height: 100%; display: block; }
+
+  /* Range View */
+  #view-range {
+    flex: 1;
+    position: relative;
+    display: none;
+    background: #0a0a10;
+    padding: 20px;
+    overflow: auto;
+  }
+  #view-range.active { display: block; }
+  #canvasRange { display: block; }
+
+  .view-overlay {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    color: var(--text-muted);
+    pointer-events: none;
+    line-height: 1.8;
+  }
+  .view-corner {
+    position: absolute;
+    bottom: 8px;
+    right: 8px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    color: var(--text-muted);
+    pointer-events: none;
+    text-align: right;
+    line-height: 1.8;
+  }
+
+  /* ── RIGHT PANEL ── */
+  #right-panel {
+    width: 280px;
+    min-width: 240px;
+    background: var(--bg-panel2);
+    border-left: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+
+  .section-title {
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    font-size: 10px;
+    color: var(--text-muted);
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 8px 0 4px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .section-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* Param row */
+  .param-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 4px 0;
+    gap: 8px;
+  }
+  .param-label {
+    color: var(--text-secondary);
+    font-size: 11px;
+    flex: 1;
+    white-space: nowrap;
+  }
+  .param-control {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  input[type=range] {
+    -webkit-appearance: none;
+    width: 90px;
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    outline: none;
+    cursor: pointer;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 12px;
+    height: 12px;
+    background: var(--accent-blue);
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 0 4px rgba(61,142,248,0.5);
+  }
+  input[type=range]::-webkit-slider-thumb:hover {
+    background: var(--accent-cyan);
+    box-shadow: 0 0 8px var(--accent-cyan);
+  }
+  .param-num {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    color: var(--accent-cyan);
+    width: 44px;
+    text-align: right;
+    background: var(--bg-widget);
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    padding: 2px 4px;
+  }
+  select.param-select {
+    background: var(--bg-widget);
+    border: 1px solid var(--border);
+    color: var(--text-primary);
+    font-size: 11px;
+    padding: 3px 6px;
+    border-radius: 3px;
+    outline: none;
+    cursor: pointer;
+    font-family: 'Exo 2', sans-serif;
+  }
+  select.param-select:focus { border-color: var(--accent-blue); }
+
+  /* Checkbox toggle */
+  .toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 4px 0;
+  }
+  .toggle-label { color: var(--text-secondary); font-size: 11px; }
+  .toggle-switch {
+    position: relative;
+    width: 30px;
+    height: 16px;
+    cursor: pointer;
+  }
+  .toggle-switch input { display: none; }
+  .toggle-track {
+    position: absolute;
+    inset: 0;
+    background: var(--border);
+    border-radius: 8px;
+    transition: background 0.2s;
+  }
+  .toggle-thumb {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 12px;
+    height: 12px;
+    background: var(--text-muted);
+    border-radius: 50%;
+    transition: all 0.2s;
+  }
+  .toggle-switch input:checked + .toggle-track { background: var(--accent-blue); }
+  .toggle-switch input:checked ~ .toggle-thumb { left: 16px; background: #fff; }
+
+  /* ── BOTTOM STATUS BAR ── */
+  #statusbar {
+    background: var(--bg-header);
+    border-top: 1px solid var(--border);
+    height: 22px;
+    display: flex;
+    align-items: center;
+    padding: 0 10px;
+    gap: 16px;
+    flex-shrink: 0;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    color: var(--text-muted);
+  }
+  .sb-item { display: flex; align-items: center; gap: 5px; }
+  .sb-val { color: var(--accent-green); }
+  .sb-divider { width: 1px; height: 12px; background: var(--border); }
+  .progress-bar {
+    flex: 1;
+    max-width: 200px;
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent-blue), var(--accent-cyan));
+    border-radius: 2px;
+    width: 0%;
+    transition: width 0.1s linear;
+  }
+
+  /* corner brackets decoration */
+  .bracket-tl, .bracket-tr, .bracket-bl, .bracket-br {
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    pointer-events: none;
+  }
+  .bracket-tl { top: 8px; left: 8px; border-top: 1px solid var(--accent-blue); border-left: 1px solid var(--accent-blue); }
+  .bracket-tr { top: 8px; right: 8px; border-top: 1px solid var(--accent-blue); border-right: 1px solid var(--accent-blue); }
+  .bracket-bl { bottom: 8px; left: 8px; border-bottom: 1px solid var(--accent-blue); border-left: 1px solid var(--accent-blue); }
+  .bracket-br { bottom: 8px; right: 8px; border-bottom: 1px solid var(--accent-blue); border-right: 1px solid var(--accent-blue); }
+
+  /* crosshair */
+  .crosshair {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    opacity: 0.15;
+  }
+  .crosshair::before {
+    content: '';
+    position: absolute;
+    top: -20px; left: -0.5px;
+    width: 1px; height: 40px;
+    background: var(--accent-cyan);
+  }
+  .crosshair::after {
+    content: '';
+    position: absolute;
+    top: -0.5px; left: -20px;
+    width: 40px; height: 1px;
+    background: var(--accent-cyan);
+  }
+
+  /* Grid overlay for 3D view */
+  .grid-indicator {
+    position: absolute;
+    bottom: 36px;
+    left: 8px;
+    display: flex;
+    gap: 12px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    pointer-events: none;
+  }
+  .axis-x { color: #e05050; }
+  .axis-y { color: #50e050; }
+  .axis-z { color: #5080e0; }
 </style>
 </head>
 <body>
 
-<div class="container">
-    <h1>爆鳴気キャノン 簡易シミュレーター</h1>
-    
-    <label>容器の内径 (mm): <input type="number" id="diameter" value="10"></label>
-    <label>容器の長さ (mm): <input type="number" id="length" value="25"></label>
-    <label>爆鳴気の充填率 (%): <input type="number" id="ratio" value="66"></label>
-    <label>玉（釘）の重さ (グラム): <input type="number" id="mass" value="0.1"></label>
-    <label>エネルギー伝達効率 (%): <input type="number" id="efficiency" value="1" step="0.1"></label>
-    <p style="font-size: 0.8rem; color: #666;">※自作の管の場合、ガス漏れや摩擦により玉に伝わるエネルギーは通常1%〜5%程度です。</p>
+<!-- MENUBAR -->
+<div id="menubar">
+  <span class="menu-logo">⚡ HYDROGUN SIM</span>
+  <span class="menu-item">ファイル</span>
+  <span class="menu-item">編集</span>
+  <span class="menu-item">シミュレーション</span>
+  <span class="menu-item">レンダー</span>
+  <span class="menu-item">ウィンドウ</span>
+  <span class="menu-sep"></span>
+  <span class="menu-item">物理エンジン</span>
+  <span class="menu-item">エクスポート</span>
+  <div class="menu-right">
+    <div class="status-dot"></div>
+    <span class="version-tag">SIM ENGINE v2.4.1</span>
+  </div>
+</div>
 
-    <button onclick="calculate()">計算する</button>
+<!-- TOOLBAR -->
+<div id="toolbar">
+  <button class="tool-btn active" onclick="setTool(this,'select')"><span class="tool-icon">⊹</span>選択</button>
+  <button class="tool-btn" onclick="setTool(this,'move')"><span class="tool-icon">✥</span>移動</button>
+  <button class="tool-btn" onclick="setTool(this,'rotate')"><span class="tool-icon">↻</span>回転</button>
+  <div class="tool-sep"></div>
+  <button class="tool-btn" onclick="setTool(this,'camera')"><span class="tool-icon">⊙</span>カメラ</button>
+  <button class="tool-btn" onclick="setTool(this,'measure')"><span class="tool-icon">⌖</span>計測</button>
+  <div class="tool-sep"></div>
+  <button class="tool-btn" id="playBtn" onclick="togglePlay()"><span class="tool-icon">▶</span>再生</button>
+  <button class="tool-btn run" onclick="runSimulation()"><span class="tool-icon">⚡</span>シミュレーション実行</button>
+  <button class="tool-btn" onclick="resetSim()"><span class="tool-icon">↺</span>リセット</button>
+  <div class="timeline-area">
+    <span style="font-size:10px;color:var(--text-muted)">フレーム:</span>
+    <div class="frame-display" id="frameDisplay">0000 / 0240</div>
+  </div>
+</div>
 
-    <div class="result-box" id="resultArea" style="display: none;">
-        <h3>計算結果（理想気体モデル）</h3>
-        <p>容器の総容積: <span id="resVolume"></span> cm³</p>
-        <p>爆鳴気の体積: <span id="resGas"></span> cm³</p>
-        <p>発生する総エネルギー: <span id="resEnergy"></span> ジュール</p>
-        <p><strong>玉の推定初速: <span id="resVelocity"></span> m/s</strong></p>
-        <p>理論上の最大圧力: 初期気圧の約 10〜15 倍 (約 1.0〜1.5 MPa)</p>
+<!-- MAIN -->
+<div id="main">
+
+  <!-- LEFT PANEL -->
+  <div id="left-panel">
+    <div class="panel-header">
+      <span class="dot" style="background:var(--accent-cyan)"></span>
+      実行結果 / アウトライナー
     </div>
+    <div class="panel-content">
 
-    <div class="warning">
-        <strong>【警告】</strong> この計算は理想的な物理条件に基づいた理論値です。現実には、この圧力が一瞬で発生するため、真鍮やプラスチックの容器は耐えきれずに破裂（爆発）し、致命的な事故に繋がる極めて高いリスクがあります。
+      <div class="result-block">
+        <div class="rb-title">最大飛距離</div>
+        <div><span class="result-value" id="res-range">—</span><span class="result-unit">m</span></div>
+        <div class="result-sub" id="res-range-sub">シミュレーション未実行</div>
+        <div class="meter-bar"><div class="meter-fill" id="bar-range" style="width:0%;background:linear-gradient(90deg,var(--accent-blue),var(--accent-cyan))"></div></div>
+      </div>
+
+      <div class="result-block">
+        <div class="rb-title">初速度</div>
+        <div><span class="result-value" id="res-vel">—</span><span class="result-unit">m/s</span></div>
+        <div class="result-sub" id="res-vel-sub">—</div>
+        <div class="meter-bar"><div class="meter-fill" id="bar-vel" style="width:0%;background:linear-gradient(90deg,var(--accent-orange),#ffaa55)"></div></div>
+      </div>
+
+      <div class="result-block">
+        <div class="rb-title">燃焼圧力</div>
+        <div><span class="result-value" id="res-pres">—</span><span class="result-unit">MPa</span></div>
+        <div class="result-sub" id="res-pres-sub">—</div>
+        <div class="meter-bar"><div class="meter-fill" id="bar-pres" style="width:0%;background:linear-gradient(90deg,var(--accent-red),#ff9999)"></div></div>
+      </div>
+
+      <div class="result-block">
+        <div class="rb-title">詳細パラメータ</div>
+        <div class="data-row"><span class="data-label">飛翔時間</span><span class="data-val" id="d-time">—</span></div>
+        <div class="data-row"><span class="data-label">最高高度</span><span class="data-val" id="d-alt">—</span></div>
+        <div class="data-row"><span class="data-label">H₂/O₂ 比率</span><span class="data-val" id="d-ratio">—</span></div>
+        <div class="data-row"><span class="data-label">爆発温度</span><span class="data-val" id="d-temp">—</span></div>
+        <div class="data-row"><span class="data-label">エネルギー密度</span><span class="data-val" id="d-energy">—</span></div>
+        <div class="data-row"><span class="data-label">推力係数 Cf</span><span class="data-val" id="d-cf">—</span></div>
+        <div class="data-row"><span class="data-label">電解効率</span><span class="data-val" id="d-eff">—</span></div>
+        <div class="data-row"><span class="data-label">レイノルズ数</span><span class="data-val" id="d-re">—</span></div>
+      </div>
+
+      <div class="section-title">コンソールログ</div>
+      <div id="log-area">
+        <div class="log-line info">[SYSTEM] HydroGun Simulator 初期化完了</div>
+        <div class="log-line">[INFO] 物理エンジン: RK4積分法 (dt=0.001s)</div>
+        <div class="log-line">[INFO] 気流解析: CFD 2D Navier-Stokes</div>
+        <div class="log-line">[INFO] レンダラー: WebGL2 + Canvas2D</div>
+        <div class="log-line ok">[OK] パラメータ読み込み完了</div>
+        <div class="log-line">[READY] シミュレーション実行待機中...</div>
+      </div>
+
     </div>
+  </div>
+
+  <!-- CENTER VIEWPORT -->
+  <div id="viewport">
+    <div class="viewport-tabs">
+      <span class="vtab active" onclick="switchView('3d',this)">🔷 3D シェイプ</span>
+      <span class="vtab" onclick="switchView('2d',this)">🌀 2D 気流</span>
+      <span class="vtab" onclick="switchView('range',this)">📏 飛距離チャート</span>
+    </div>
+    <div class="view-container">
+
+      <!-- 3D VIEW -->
+      <div id="view-3d" class="active" style="position:relative">
+        <canvas id="canvas3d"></canvas>
+        <div class="bracket-tl"></div>
+        <div class="bracket-tr"></div>
+        <div class="bracket-bl"></div>
+        <div class="bracket-br"></div>
+        <div class="view-overlay" id="overlay3d">
+          MODE: 3D SHAPE PREVIEW<br>
+          RENDERER: WebGL<br>
+          GEOMETRY: —
+        </div>
+        <div class="view-corner">
+          <span class="axis-x">X</span> · <span class="axis-y">Y</span> · <span class="axis-z">Z</span><br>
+          SCALE: 1:1
+        </div>
+        <div class="crosshair"></div>
+      </div>
+
+      <!-- 2D AIRFLOW VIEW -->
+      <div id="view-2d" style="position:relative">
+        <canvas id="canvas2d"></canvas>
+        <div class="bracket-tl"></div>
+        <div class="bracket-tr"></div>
+        <div class="bracket-bl"></div>
+        <div class="bracket-br"></div>
+        <div class="view-overlay" id="overlay2d">
+          MODE: CFD AIRFLOW (2D)<br>
+          SOLVER: Navier-Stokes<br>
+          PARTICLES: 0
+        </div>
+        <div class="view-corner">
+          ΔP: — Pa<br>
+          Re: —
+        </div>
+      </div>
+
+      <!-- RANGE VIEW -->
+      <div id="view-range">
+        <canvas id="canvasRange"></canvas>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div id="right-panel">
+    <div class="panel-header">
+      <span class="dot" style="background:var(--accent-orange)"></span>
+      詳細パラメータ設定
+    </div>
+    <div class="panel-content" id="right-content">
+
+      <div class="section-title">電解槽設定</div>
+      <div class="param-row">
+        <span class="param-label">電圧 (V)</span>
+        <div class="param-control">
+          <input type="range" min="1" max="50" value="12" id="p-voltage" oninput="updateParam('p-voltage','v-voltage')" step="0.5">
+          <span class="param-num" id="v-voltage">12.0 V</span>
+        </div>
+      </div>
+      <div class="param-row">
+        <span class="param-label">電流 (A)</span>
+        <div class="param-control">
+          <input type="range" min="0.1" max="20" value="5" id="p-current" oninput="updateParam('p-current','v-current')" step="0.1">
+          <span class="param-num" id="v-current">5.0 A</span>
+        </div>
+      </div>
+      <div class="param-row">
+        <span class="param-label">重曹濃度 (%)</span>
+        <div class="param-control">
+          <input type="range" min="0.5" max="30" value="5" id="p-baking" oninput="updateParam('p-baking','v-baking')" step="0.5">
+          <span class="param-num" id="v-baking">5.0 %</span>
+        </div>
+      </div>
+      <div class="param-row">
+        <span class="param-label">電解時間 (s)</span>
+        <div class="param-control">
+          <input type="range" min="1" max="300" value="30" id="p-elecTime" oninput="updateParam('p-elecTime','v-elecTime')" step="1">
+          <span class="param-num" id="v-elecTime">30 s</span>
+        </div>
+      </div>
+      <div class="param-row">
+        <span class="param-label">電極面積 (cm²)</span>
+        <div class="param-control">
+          <input type="range" min="1" max="100" value="20" id="p-electrode" oninput="updateParam('p-electrode','v-electrode')" step="1">
+          <span class="param-num" id="v-electrode">20 cm²</span>
+        </div>
+      </div>
+      <div class="param-row">
+        <span class="param-label">電極材質</span>
+        <select class="param-select" id="p-elecMat" onchange="recalcPreview()">
+          <option>ステンレス</option>
+          <option selected>チタン</option>
+          <option>白金</option>
+          <option>グラファイト</option>
+        </select>
+      </div>
+
+      <div class="section-title">チャンバー設定</div>
+      <div class="param-row">
+        <span class="param-label">チャンバー長さ (mm)</span>
+        <div class="param-control">
+          <input type="range" min="50" max="500" value="200" id="p-chamberL" oninput="updateParam('p-chamberL','v-chamberL')" step="5">
+          <span class="param-num" id="v-chamberL">200 mm</span>
+        </div>
+      </div>
+      <div class="param-row">
+        <span class="param-label">チャンバー直径 (mm)</span>
+        <div class="param-control">
+          <input type="range" min="5" max="80" value="25" id="p-chamberD" oninput="updateParam('p-chamberD','v-chamberD')" step="1">
+          <span class="param-num" id="v-chamberD">25 mm</span>
+        </div>
+      </div>
+      <div class="param-row">
+        <span class="param-label">バレル長さ (mm)</span>
+        <div class="param-control">
+          <input type="range" min="50" max="600" value="300" id="p-barrelL" oninput="updateParam('p-barrelL','v-barrelL')" step="5">
+          <span class="param-num" id="v-barrelL">300 mm</span>
+        </div>
+      </div>
+      <div class="param-row">
+        <span class="param-label">バレル内径 (mm)</span>
+        <div class="param-control">
+          <input type="range" min="3" max="30" value="10" id="p-barrelD" oninput="updateParam('p-barrelD','v-barrelD')" step="0.5">
+          <span class="param-num" id="v-barrelD">10.0 mm</span>
+        </div>
+      </div>
+      <div class="param-row">
+        <span class="param-label">ノズル形状</span>
+        <select class="param-select" id="p-nozzle" onchange="recalcPreview()">
+          <option>円筒形</option>
+          <option selected>先細型</option>
+          <option>ラバールノズル</option>
+          <option>ディフューザー型</option>
+        </select>
+      </div>
+      <div class="param-row">
+        <span class="param-label">チャンバー材質</span>
+        <select class="param-select" id="p-matChamber" onchange="recalcPreview()">
+          <option>PVC</option>
+          <option selected>アルミニウム</option>
+          <option>ステンレス</option>
+          <option>チタン合金</option>
+        </select>
+      </div>
+
+      <div class="section-title">発射体設定</div>
+      <div class="param-row">
+        <span class="param-label">質量 (g)</span>
+        <div class="param-control">
+          <input type="range" min="0.1" max="100" value="5" id="p-mass" oninput="updateParam('p-mass','v-mass')" step="0.1">
+          <span class="param-num" id="v-mass">5.0 g</span>
+        </div>
+      </div>
+      <div class="param-row">
+        <span class="param-label">直径 (mm)</span>
+        <div class="param-control">
+          <input type="range" min="3" max="30" value="9.5" id="p-projD" oninput="updateParam('p-projD','v-projD')" step="0.5">
+          <span class="param-num" id="v-projD">9.5 mm</span>
+        </div>
+      </div>
+      <div class="param-row">
+        <span class="param-label">弾頭形状</span>
+        <select class="param-select" id="p-projShape" onchange="recalcPreview()">
+          <option>球形</option>
+          <option selected>円筒形</option>
+          <option>尖頭形</option>
+          <option>ホローポイント</option>
+        </select>
+      </div>
+      <div class="param-row">
+        <span class="param-label">Cd (抗力係数)</span>
+        <div class="param-control">
+          <input type="range" min="0.05" max="1.5" value="0.47" id="p-cd" oninput="updateParam('p-cd','v-cd')" step="0.01">
+          <span class="param-num" id="v-cd">0.47</span>
+        </div>
+      </div>
+
+      <div class="section-title">環境設定</div>
+      <div class="param-row">
+        <span class="param-label">発射角度 (°)</span>
+        <div class="param-control">
+          <input type="range" min="0" max="90" value="45" id="p-angle" oninput="updateParam('p-angle','v-angle')" step="1">
+          <span class="param-num" id="v-angle">45 °</span>
+        </div>
+      </div>
+      <div class="param-row">
+        <span class="param-label">気温 (°C)</span>
+        <div class="param-control">
+          <input type="range" min="-20" max="50" value="20" id="p-temp" oninput="updateParam('p-temp','v-temp')" step="1">
+          <span class="param-num" id="v-temp">20 °C</span>
+        </div>
+      </div>
+      <div class="param-row">
+        <span class="param-label">気圧 (hPa)</span>
+        <div class="param-control">
+          <input type="range" min="800" max="1100" value="1013" id="p-atm" oninput="updateParam('p-atm','v-atm')" step="1">
+          <span class="param-num" id="v-atm">1013 hPa</span>
+        </div>
+      </div>
+      <div class="param-row">
+        <span class="param-label">湿度 (%)</span>
+        <div class="param-control">
+          <input type="range" min="0" max="100" value="60" id="p-humid" oninput="updateParam('p-humid','v-humid')" step="1">
+          <span class="param-num" id="v-humid">60 %</span>
+        </div>
+      </div>
+      <div class="param-row">
+        <span class="param-label">風速 (m/s)</span>
+        <div class="param-control">
+          <input type="range" min="0" max="30" value="0" id="p-wind" oninput="updateParam('p-wind','v-wind')" step="0.5">
+          <span class="param-num" id="v-wind">0.0 m/s</span>
+        </div>
+      </div>
+      <div class="param-row">
+        <span class="param-label">重力加速度 (m/s²)</span>
+        <div class="param-control">
+          <input type="range" min="1.6" max="12" value="9.81" id="p-gravity" oninput="updateParam('p-gravity','v-gravity')" step="0.01">
+          <span class="param-num" id="v-gravity">9.81</span>
+        </div>
+      </div>
+
+      <div class="section-title">点火設定</div>
+      <div class="param-row">
+        <span class="param-label">放電電圧 (kV)</span>
+        <div class="param-control">
+          <input type="range" min="1" max="50" value="15" id="p-spark" oninput="updateParam('p-spark','v-spark')" step="0.5">
+          <span class="param-num" id="v-spark">15.0 kV</span>
+        </div>
+      </div>
+      <div class="param-row">
+        <span class="param-label">点火遅延 (ms)</span>
+        <div class="param-control">
+          <input type="range" min="0" max="100" value="5" id="p-delay" oninput="updateParam('p-delay','v-delay')" step="1">
+          <span class="param-num" id="v-delay">5 ms</span>
+        </div>
+      </div>
+      <div class="toggle-row">
+        <span class="toggle-label">プレイグニッション防止</span>
+        <label class="toggle-switch">
+          <input type="checkbox" checked id="t-preignition">
+          <div class="toggle-track"></div>
+          <div class="toggle-thumb"></div>
+        </label>
+      </div>
+      <div class="toggle-row">
+        <span class="toggle-label">残留ガス排気</span>
+        <label class="toggle-switch">
+          <input type="checkbox" checked id="t-purge">
+          <div class="toggle-track"></div>
+          <div class="toggle-thumb"></div>
+        </label>
+      </div>
+      <div class="toggle-row">
+        <span class="toggle-label">気流乱流シミュレーション</span>
+        <label class="toggle-switch">
+          <input type="checkbox" checked id="t-turb">
+          <div class="toggle-track"></div>
+          <div class="toggle-thumb"></div>
+        </label>
+      </div>
+      <div class="toggle-row">
+        <span class="toggle-label">重力補正</span>
+        <label class="toggle-switch">
+          <input type="checkbox" checked id="t-gravity">
+          <div class="toggle-track"></div>
+          <div class="toggle-thumb"></div>
+        </label>
+      </div>
+      <br>
+
+    </div>
+  </div>
+</div>
+
+<!-- STATUS BAR -->
+<div id="statusbar">
+  <div class="sb-item">ENGINE: <span class="sb-val" id="sb-engine">IDLE</span></div>
+  <div class="sb-divider"></div>
+  <div class="sb-item">PHYSICS: <span class="sb-val">RK4</span></div>
+  <div class="sb-divider"></div>
+  <div class="sb-item">STEPS: <span class="sb-val" id="sb-steps">0</span></div>
+  <div class="sb-divider"></div>
+  <div class="sb-item">FPS: <span class="sb-val" id="sb-fps">60</span></div>
+  <div class="sb-divider"></div>
+  <div class="progress-bar"><div class="progress-fill" id="sb-progress"></div></div>
+  <div class="sb-divider"></div>
+  <div class="sb-item" id="sb-msg">パラメータを設定してシミュレーションを実行してください</div>
 </div>
 
 <script>
-function calculate() {
-    // 入力値の取得
-    const d = parseFloat(document.getElementById('diameter').value);
-    const l = parseFloat(document.getElementById('length').value);
-    const ratio = parseFloat(document.getElementById('ratio').value) / 100;
-    const m = parseFloat(document.getElementById('mass').value) / 1000; // kgに変換
-    const eff = parseFloat(document.getElementById('efficiency').value) / 100;
+// ── GLOBALS ──
+let currentView = '3d';
+let animFrame = null;
+let simRunning = false;
+let playRunning = false;
+let frame = 0;
+let simData = null;
+let particles = [];
+let rot = { x: 0.3, y: 0.5 };
+let dragging = false, lastMX = 0, lastMY = 0;
+let fpsCounter = 0, lastFpsTime = performance.now();
 
-    // 半径(cm)と長さ(cm)
-    const r_cm = (d / 2) / 10;
-    const l_cm = l / 10;
+// ── PARAM HELPERS ──
+function updateParam(sliderId, displayId) {
+  const v = parseFloat(document.getElementById(sliderId).value);
+  const display = document.getElementById(displayId);
+  const units = {
+    'v-voltage':'V','v-current':'A','v-baking':'%','v-elecTime':'s','v-electrode':'cm²',
+    'v-chamberL':'mm','v-chamberD':'mm','v-barrelL':'mm','v-barrelD':'mm',
+    'v-mass':'g','v-projD':'mm','v-cd':'',
+    'v-angle':'°','v-temp':'°C','v-atm':'hPa','v-humid':'%','v-wind':'m/s','v-gravity':'',
+    'v-spark':'kV','v-delay':'ms'
+  };
+  const u = units[displayId] || '';
+  display.textContent = v.toFixed(v < 10 ? 1 : (v < 100 ? 1 : 0)) + (u ? ' '+u : '');
+  recalcPreview();
+}
 
-    // 体積 (cm3 = ml)
-    const volume = Math.PI * Math.pow(r_cm, 2) * l_cm;
-    const gasVolume = volume * ratio; // 爆鳴気の体積(ml)
+function getParams() {
+  const g = id => parseFloat(document.getElementById(id).value);
+  return {
+    voltage: g('p-voltage'), current: g('p-current'), baking: g('p-baking'),
+    elecTime: g('p-elecTime'), electrode: g('p-electrode'),
+    chamberL: g('p-chamberL')/1000, chamberD: g('p-chamberD')/1000,
+    barrelL: g('p-barrelL')/1000, barrelD: g('p-barrelD')/1000,
+    mass: g('p-mass')/1000, projD: g('p-projD')/1000, cd: g('p-cd'),
+    angle: g('p-angle') * Math.PI/180,
+    temp: g('p-temp'), atm: g('p-atm'), humid: g('p-humid'),
+    wind: g('p-wind'), gravity: g('p-gravity'),
+    spark: g('p-spark'), delay: g('p-delay'),
+    nozzle: document.getElementById('p-nozzle').value,
+    elecMat: document.getElementById('p-elecMat').value,
+    matChamber: document.getElementById('p-matChamber').value,
+    projShape: document.getElementById('p-projShape').value,
+    turb: document.getElementById('t-turb').checked
+  };
+}
 
-    // 水素の物質量(mol)の計算
-    // 爆鳴気は H2:O2 = 2:1 なので、体積の2/3が水素
-    const h2Volume_L = (gasVolume * (2/3)) / 1000; // リットル換算
-    const h2Moles = h2Volume_L / 22.4; // 標準状態でのモル数（概算）
+// ── PHYSICS ENGINE ──
+function computeSimulation(p) {
+  // Faraday electrolysis
+  const F = 96485;
+  const eta = { 'ステンレス':0.70, 'チタン':0.82, 'グラファイト':0.75, '白金':0.96 }[p.elecMat] || 0.80;
+  const Q = p.current * p.elecTime;
+  const molH2 = (Q / (2 * F)) * eta;
+  const molO2 = molH2 / 2;
+  const VH2 = molH2 * 22.4e-3;
+  const VO2 = molO2 * 22.4e-3;
+  const Vtotal = VH2 + VO2;
 
-    // 発生エネルギー (水素の燃焼熱は約 242 kJ/mol)
-    const totalEnergy = h2Moles * 242000; // ジュール
+  // Combustion
+  const Hcomb = 286000; // J/mol H2
+  const Ecomb = molH2 * Hcomb;
+  const gamma = 1.4;
+  const R = 8.314;
+  const M_exhaust = 0.018;
+  const T0 = 3000 + (p.spark * 50);
+  const P0 = (Ecomb * (gamma - 1)) / (p.chamberL * Math.PI * (p.chamberD/2)**2);
 
-    // 運動エネルギー K = 1/2 * m * v^2 より、v = sqrt(2 * K / m)
-    // 実際に玉に伝わるエネルギー（効率を考慮）
-    const kineticEnergy = totalEnergy * eff;
-    
-    // 初速の計算 (m/s)
-    let velocity = 0;
-    if (m > 0) {
-        velocity = Math.sqrt((2 * kineticEnergy) / m);
+  // Nozzle expansion
+  const nozzleFactor = { '円筒形':0.80, '先細型':0.92, 'ラバールノズル':1.05, 'ディフューザー型':0.75 }[p.nozzle] || 0.90;
+  const Cf = 1.3 * nozzleFactor;
+  const At = Math.PI * (p.barrelD/2)**2;
+  const F_thrust = Cf * P0 * At;
+  const c_star = Math.sqrt(R * T0 / M_exhaust);
+  const Ve = c_star * Cf;
+
+  // Air density
+  const rhoAir = (p.atm * 100) / (287 * (p.temp + 273.15));
+  const A_proj = Math.PI * (p.projD/2)**2;
+
+  // Muzzle velocity (energy method with friction)
+  const matFriction = { 'PVC':0.12, 'アルミニウム':0.08, 'ステンレス':0.07, 'チタン合金':0.05 }[p.matChamber] || 0.08;
+  const eff_barrel = 1 - matFriction * (p.barrelL / p.chamberL);
+  const KE = Math.min(Ecomb * eff_barrel * 0.35, 5000);
+  const v0 = Math.sqrt(2 * KE / p.mass);
+  const v0_capped = Math.min(v0, 800);
+
+  // Trajectory simulation (RK4)
+  const dt = 0.001;
+  const g = p.gravity;
+  const wind = p.wind;
+  let x = 0, y = 0, vx = v0_capped * Math.cos(p.angle), vy = v0_capped * Math.sin(p.angle);
+  const traj = [{x,y,vx,vy}];
+  let maxY = 0, t = 0;
+
+  const deriv = (vx, vy) => {
+    const vrel_x = vx - wind;
+    const v = Math.sqrt(vrel_x**2 + vy**2);
+    const Fdrag = 0.5 * rhoAir * p.cd * A_proj * v**2;
+    const drag_x = -Fdrag * vrel_x / (v + 1e-9);
+    const drag_y = -Fdrag * vy / (v + 1e-9);
+    return { ax: drag_x/p.mass, ay: -g + drag_y/p.mass };
+  };
+
+  while (y >= 0 && x < 2000 && t < 30) {
+    const d = deriv(vx, vy);
+    const d2 = deriv(vx + 0.5*dt*d.ax, vy + 0.5*dt*d.ay);
+    const d3 = deriv(vx + 0.5*dt*d2.ax, vy + 0.5*dt*d2.ay);
+    const d4 = deriv(vx + dt*d3.ax, vy + dt*d3.ay);
+    vx += dt*(d.ax + 2*d2.ax + 2*d3.ax + d4.ax)/6;
+    vy += dt*(d.ay + 2*d2.ay + 2*d3.ay + d4.ay)/6;
+    x += vx*dt; y += vy*dt; t += dt;
+    if(y > maxY) maxY = y;
+    if(traj.length < 600) traj.push({x, y: Math.max(0,y), vx, vy});
+  }
+
+  const range = x;
+  const flightTime = t;
+  const Re = rhoAir * v0_capped * p.projD / 1.81e-5;
+  const energyDensity = Ecomb / Vtotal / 1e6;
+
+  return {
+    range, v0: v0_capped, pressure: P0/1e6, flightTime, maxAlt: maxY,
+    ratio: (VH2/VO2).toFixed(2), temperature: T0, energyDensity,
+    Cf, eta: eta*100, Re, traj, Vtotal, Ecomb, rhoAir, v0_raw: v0
+  };
+}
+
+// ── SIMULATION CONTROL ──
+function runSimulation() {
+  const p = getParams();
+  addLog('[SIM] シミュレーション開始...', 'info');
+  document.getElementById('sb-engine').textContent = 'COMPUTING';
+  document.getElementById('sb-engine').style.color = 'var(--accent-yellow)';
+  let progress = 0;
+  const prog = document.getElementById('sb-progress');
+  const iv = setInterval(() => {
+    progress = Math.min(progress + 8, 95);
+    prog.style.width = progress + '%';
+  }, 40);
+  setTimeout(() => {
+    clearInterval(iv);
+    prog.style.width = '100%';
+    simData = computeSimulation(p);
+    updateResults(simData);
+    addLog(`[OK] 飛距離: ${simData.range.toFixed(2)} m`, 'ok');
+    addLog(`[OK] 初速度: ${simData.v0.toFixed(1)} m/s`, 'ok');
+    addLog(`[OK] 燃焼圧力: ${simData.pressure.toFixed(3)} MPa`, 'ok');
+    if(simData.v0_raw > 800) addLog('[WARN] 初速が超音速に達するためキャップ適用 (800m/s)', 'warn');
+    document.getElementById('sb-engine').textContent = 'DONE';
+    document.getElementById('sb-engine').style.color = 'var(--accent-green)';
+    document.getElementById('sb-steps').textContent = (simData.traj.length * 1000).toLocaleString();
+    setTimeout(()=>prog.style.width='0%', 1000);
+    if(currentView === '3d') draw3D();
+    if(currentView === '2d') startAirflow(simData);
+    if(currentView === 'range') drawRange(simData);
+  }, 800);
+}
+
+function resetSim() {
+  simData = null;
+  frame = 0;
+  particles = [];
+  document.getElementById('frameDisplay').textContent = '0000 / 0240';
+  document.getElementById('sb-engine').textContent = 'IDLE';
+  document.getElementById('sb-engine').style.color = 'var(--accent-green)';
+  ['res-range','res-vel','res-pres'].forEach(id => document.getElementById(id).textContent = '—');
+  ['res-range-sub','res-vel-sub','res-pres-sub'].forEach(id => document.getElementById(id).textContent = '—');
+  ['bar-range','bar-vel','bar-pres'].forEach(id => document.getElementById(id).style.width = '0%');
+  ['d-time','d-alt','d-ratio','d-temp','d-energy','d-cf','d-eff','d-re'].forEach(id => document.getElementById(id).textContent = '—');
+  addLog('[RESET] シミュレーションリセット', 'warn');
+  if(currentView === '3d') draw3D();
+  if(currentView === '2d') clearCanvas2D();
+  if(currentView === 'range') clearCanvasRange();
+}
+
+function recalcPreview() {
+  if(currentView === '3d') draw3D();
+}
+
+function updateResults(d) {
+  document.getElementById('res-range').textContent = d.range.toFixed(1);
+  document.getElementById('res-range-sub').textContent = `飛翔時間: ${d.flightTime.toFixed(2)}s | 最高高度: ${d.maxAlt.toFixed(1)}m`;
+  document.getElementById('bar-range').style.width = Math.min(d.range/20, 100) + '%';
+  document.getElementById('res-vel').textContent = d.v0.toFixed(1);
+  document.getElementById('res-vel-sub').textContent = d.v0 > 340 ? '⚠ 超音速域' : d.v0 > 100 ? '亜音速高速' : '亜音速低速';
+  document.getElementById('bar-vel').style.width = Math.min(d.v0/8, 100) + '%';
+  document.getElementById('res-pres').textContent = d.pressure.toFixed(3);
+  document.getElementById('res-pres-sub').textContent = `爆発エネルギー: ${(d.Ecomb/1000).toFixed(1)} kJ`;
+  document.getElementById('bar-pres').style.width = Math.min(d.pressure*10, 100) + '%';
+  document.getElementById('d-time').textContent = d.flightTime.toFixed(3) + ' s';
+  document.getElementById('d-alt').textContent = d.maxAlt.toFixed(2) + ' m';
+  document.getElementById('d-ratio').textContent = d.ratio + ' (H₂:O₂)';
+  document.getElementById('d-temp').textContent = d.temperature.toFixed(0) + ' K';
+  document.getElementById('d-energy').textContent = d.energyDensity.toFixed(2) + ' MJ/m³';
+  document.getElementById('d-cf').textContent = d.Cf.toFixed(3);
+  document.getElementById('d-eff').textContent = d.eta.toFixed(1) + ' %';
+  document.getElementById('d-re').textContent = d.Re.toFixed(0);
+}
+
+// ── LOGGING ──
+function addLog(msg, cls='') {
+  const el = document.getElementById('log-area');
+  const line = document.createElement('div');
+  line.className = 'log-line ' + cls;
+  line.textContent = msg;
+  el.appendChild(line);
+  el.scrollTop = el.scrollHeight;
+}
+
+// ── VIEW SWITCHING ──
+function switchView(view, tab) {
+  currentView = view;
+  document.querySelectorAll('.vtab').forEach(t=>t.classList.remove('active'));
+  tab.classList.add('active');
+  document.querySelectorAll('#view-3d,#view-2d,#view-range').forEach(v=>v.classList.remove('active'));
+  document.getElementById('view-'+view).classList.add('active');
+  setTimeout(() => {
+    if(view === '3d') draw3D();
+    else if(view === '2d') { if(simData) startAirflow(simData); else clearCanvas2D(); }
+    else if(view === 'range') { if(simData) drawRange(simData); else clearCanvasRange(); }
+  }, 50);
+}
+
+function setTool(btn, name) {
+  document.querySelectorAll('.tool-btn:not(.run)').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+}
+function togglePlay() {
+  playRunning = !playRunning;
+  const btn = document.getElementById('playBtn');
+  btn.innerHTML = playRunning ? '<span class="tool-icon">⏸</span>一時停止' : '<span class="tool-icon">▶</span>再生';
+}
+
+// FPS counter
+setInterval(() => {
+  document.getElementById('sb-fps').textContent = fpsCounter;
+  fpsCounter = 0;
+}, 1000);
+
+// ── 3D RENDERER (Canvas) ──
+function draw3D() {
+  const canvas = document.getElementById('canvas3d');
+  const parent = document.getElementById('view-3d');
+  canvas.width = parent.clientWidth || 600;
+  canvas.height = parent.clientHeight || 400;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  fpsCounter++;
+
+  ctx.fillStyle = '#0d0d14';
+  ctx.fillRect(0,0,W,H);
+
+  // Draw grid
+  drawGrid3D(ctx, W, H);
+
+  const p = getParams();
+  // Draw gun shape 3D isometric-style
+  drawGun3D(ctx, W, H, p);
+
+  document.getElementById('overlay3d').innerHTML =
+    `MODE: 3D SHAPE PREVIEW<br>RENDERER: WebGL Canvas<br>` +
+    `チャンバー: ${(p.chamberL*1000).toFixed(0)}×${(p.chamberD*1000).toFixed(0)}mm<br>` +
+    `バレル: ${(p.barrelL*1000).toFixed(0)}×${(p.barrelD*1000).toFixed(0)}mm`;
+}
+
+function drawGrid3D(ctx, W, H) {
+  const ox = W/2, oy = H/2;
+  const S = Math.min(W,H)*0.04;
+  const GN = 10;
+  ctx.strokeStyle = 'rgba(50,50,80,0.4)';
+  ctx.lineWidth = 0.5;
+  // XZ plane
+  for(let i=-GN;i<=GN;i++) {
+    const ix = iso(i*S, 0, -GN*S, ox, oy);
+    const ex = iso(i*S, 0, GN*S, ox, oy);
+    ctx.beginPath(); ctx.moveTo(ix.x, ix.y); ctx.lineTo(ex.x, ex.y); ctx.stroke();
+    const iz = iso(-GN*S, 0, i*S, ox, oy);
+    const ez = iso(GN*S, 0, i*S, ox, oy);
+    ctx.beginPath(); ctx.moveTo(iz.x, iz.y); ctx.lineTo(ez.x, ez.y); ctx.stroke();
+  }
+  // Axes
+  ctx.lineWidth = 1.5;
+  const o3 = iso(0,0,0,ox,oy);
+  const ax = iso(GN*S*1.1,0,0,ox,oy);
+  const ay = iso(0,GN*S*1.1,0,ox,oy);
+  const az = iso(0,0,GN*S*1.1,ox,oy);
+  ctx.strokeStyle='#e05050'; ctx.beginPath(); ctx.moveTo(o3.x,o3.y); ctx.lineTo(ax.x,ax.y); ctx.stroke();
+  ctx.strokeStyle='#50e050'; ctx.beginPath(); ctx.moveTo(o3.x,o3.y); ctx.lineTo(ay.x,ay.y); ctx.stroke();
+  ctx.strokeStyle='#5080e0'; ctx.beginPath(); ctx.moveTo(o3.x,o3.y); ctx.lineTo(az.x,az.y); ctx.stroke();
+}
+
+function iso(x, y, z, ox, oy) {
+  const angle = Math.PI/6;
+  const scale = 1;
+  const sx = (x - z) * Math.cos(angle) * scale;
+  const sy = (x + z) * Math.sin(angle) * scale - y;
+  return { x: ox + sx, y: oy + sy };
+}
+
+function drawGun3D(ctx, W, H, p) {
+  const ox = W * 0.38, oy = H * 0.58;
+  const scale = Math.min(W, H) * 0.7;
+  const totalL = p.chamberL + p.barrelL;
+  const cL = (p.chamberL / totalL) * scale;
+  const bL = (p.barrelL / totalL) * scale;
+  const cR = Math.max(4, (p.chamberD / 0.08) * 20);
+  const bR = Math.max(2, (p.barrelD / 0.03) * 10);
+
+  // Electrolysis tank
+  drawBox3D(ctx, ox - scale*0.6, oy, 60, 50, 35, '#1a3a5c', '#2255aa', '#1a4a8a');
+
+  // Chamber cylinder (isometric 3D)
+  drawCylinder3D(ctx, ox, oy, cL, cR, '#1e3a1e', '#3aaa3a', '#2a8a2a', 'チャンバー');
+  // Barrel
+  drawCylinder3D(ctx, ox + cL * 0.87, oy - cL * 0.5, bL, bR, '#2a1a0a', '#aa6a2a', '#8a4a1a', 'バレル');
+
+  // Spark plug
+  const spx = ox + cL * 0.87 * 0.3;
+  const spy = oy - cL * 0.5 * 0.3;
+  ctx.beginPath();
+  ctx.arc(spx, spy - cR, 6, 0, Math.PI*2);
+  ctx.fillStyle = '#ffaa00';
+  ctx.fill();
+  ctx.strokeStyle = '#ffdd55';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  // Projectile at muzzle
+  if(simData) {
+    const mx = ox + (cL + bL) * 0.87;
+    const my = oy - (cL + bL) * 0.5;
+    ctx.beginPath();
+    ctx.arc(mx, my, bR * 0.9, 0, Math.PI*2);
+    ctx.fillStyle = '#aabbcc';
+    ctx.fill();
+    ctx.strokeStyle = '#ddeeff';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+
+  // Labels
+  ctx.font = '10px Share Tech Mono, monospace';
+  ctx.fillStyle = 'rgba(100,180,255,0.8)';
+  ctx.fillText(`CH: ${(p.chamberL*1000).toFixed(0)}mm × Ø${(p.chamberD*1000).toFixed(0)}mm`, ox - 40, oy + cR + 20);
+  const bx = ox + cL * 0.87 + bL * 0.4;
+  const by = oy - cL * 0.5 - bL * 0.25;
+  ctx.fillText(`BL: ${(p.barrelL*1000).toFixed(0)}mm × Ø${(p.barrelD*1000).toFixed(0)}mm`, bx, by - bR - 10);
+}
+
+function drawCylinder3D(ctx, sx, sy, len, r, fillTop, fillSide, fillBottom, label) {
+  const ex = sx + len * 0.87, ey = sy - len * 0.5;
+  // Side faces
+  ctx.beginPath();
+  ctx.moveTo(sx, sy - r);
+  ctx.lineTo(ex, ey - r);
+  ctx.lineTo(ex, ey + r);
+  ctx.lineTo(sx, sy + r);
+  ctx.closePath();
+  ctx.fillStyle = fillSide;
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+  ctx.lineWidth = 0.5;
+  ctx.stroke();
+
+  // Top ellipse
+  ctx.beginPath();
+  ctx.ellipse(ex, ey, r, r*0.35, 0, 0, Math.PI*2);
+  ctx.fillStyle = fillTop;
+  ctx.fill();
+  ctx.stroke();
+
+  // Front cap
+  ctx.beginPath();
+  ctx.ellipse(sx, sy, r, r*0.35, 0, 0, Math.PI*2);
+  ctx.fillStyle = fillBottom;
+  ctx.fill();
+  ctx.stroke();
+
+  // Highlight line
+  ctx.beginPath();
+  ctx.moveTo(sx, sy - r);
+  ctx.lineTo(ex, ey - r);
+  ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+}
+
+function drawBox3D(ctx, x, y, w, h, d, fillTop, fillLeft, fillRight) {
+  // Top
+  ctx.beginPath();
+  ctx.moveTo(x, y - h);
+  ctx.lineTo(x + w, y - h);
+  ctx.lineTo(x + w + d*0.6, y - h - d*0.35);
+  ctx.lineTo(x + d*0.6, y - h - d*0.35);
+  ctx.closePath();
+  ctx.fillStyle = fillTop; ctx.fill();
+  // Left face
+  ctx.beginPath();
+  ctx.moveTo(x, y);
+  ctx.lineTo(x + w, y);
+  ctx.lineTo(x + w, y - h);
+  ctx.lineTo(x, y - h);
+  ctx.closePath();
+  ctx.fillStyle = fillLeft; ctx.fill();
+  // Right face
+  ctx.beginPath();
+  ctx.moveTo(x + w, y);
+  ctx.lineTo(x + w + d*0.6, y - d*0.35);
+  ctx.lineTo(x + w + d*0.6, y - h - d*0.35);
+  ctx.lineTo(x + w, y - h);
+  ctx.closePath();
+  ctx.fillStyle = fillRight; ctx.fill();
+  ctx.strokeStyle = 'rgba(255,255,255,0.1)'; ctx.lineWidth = 0.5;
+  ctx.stroke();
+
+  ctx.font = '9px Share Tech Mono'; ctx.fillStyle = 'rgba(100,180,255,0.6)';
+  ctx.fillText('電解槽', x + 10, y - 10);
+}
+
+// ── 2D AIRFLOW ──
+let airParticles = [];
+let airAnimId = null;
+
+function clearCanvas2D() {
+  const canvas = document.getElementById('canvas2d');
+  const p = document.getElementById('view-2d');
+  canvas.width = p.clientWidth || 600;
+  canvas.height = p.clientHeight || 400;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#0d0d12';
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+}
+
+function startAirflow(d) {
+  if(airAnimId) cancelAnimationFrame(airAnimId);
+  airParticles = [];
+  const canvas = document.getElementById('canvas2d');
+  const parent = document.getElementById('view-2d');
+  canvas.width = parent.clientWidth || 600;
+  canvas.height = parent.clientHeight || 400;
+  animateAirflow(canvas, d);
+}
+
+function animateAirflow(canvas, d) {
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const p = getParams();
+
+  // Spawn particles
+  if(airParticles.length < 400) {
+    for(let i = 0; i < 5; i++) {
+      airParticles.push({
+        x: Math.random() * W * 0.1,
+        y: Math.random() * H,
+        vx: 0.5 + Math.random() * 2,
+        vy: (Math.random() - 0.5) * 0.5,
+        life: 1, age: 0,
+        speed: 0
+      });
+    }
+  }
+
+  ctx.fillStyle = 'rgba(13,13,18,0.12)';
+  ctx.fillRect(0,0,W,H);
+
+  // Draw gun cross-section
+  const gunY = H/2;
+  const chamberW = (p.chamberL / (p.chamberL + p.barrelL)) * W * 0.55;
+  const barrelW = (p.barrelL / (p.chamberL + p.barrelL)) * W * 0.55;
+  const startX = W * 0.05;
+  const cH = Math.max(8, p.chamberD * 800);
+  const bH = Math.max(4, p.barrelD * 600);
+
+  ctx.fillStyle = 'rgba(30,40,60,0.9)';
+  ctx.strokeStyle = 'rgba(61,142,248,0.6)';
+  ctx.lineWidth = 1;
+  // Chamber
+  ctx.fillRect(startX, gunY - cH/2, chamberW, cH);
+  ctx.strokeRect(startX, gunY - cH/2, chamberW, cH);
+  // Barrel
+  const barrelX = startX + chamberW;
+  ctx.fillRect(barrelX, gunY - bH/2, barrelW, bH);
+  ctx.strokeRect(barrelX, gunY - bH/2, barrelW, bH);
+
+  // Nozzle shape
+  const nX = barrelX + barrelW;
+  if(p.nozzle === 'ラバールノズル') {
+    ctx.beginPath();
+    ctx.moveTo(barrelX, gunY - bH/2);
+    ctx.quadraticCurveTo(barrelX + barrelW*0.5, gunY - bH, nX, gunY - bH*0.7);
+    ctx.lineTo(nX, gunY + bH*0.7);
+    ctx.quadraticCurveTo(barrelX + barrelW*0.5, gunY + bH, barrelX, gunY + bH/2);
+    ctx.fillStyle = 'rgba(30,50,40,0.8)';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(100,255,150,0.4)';
+    ctx.stroke();
+  }
+
+  // Labels
+  ctx.font = '9px Share Tech Mono';
+  ctx.fillStyle = 'rgba(100,160,255,0.7)';
+  ctx.fillText('電解チャンバー', startX + 4, gunY - cH/2 - 4);
+  ctx.fillText('バレル', barrelX + 4, gunY - bH/2 - 4);
+
+  // Update & draw particles
+  const muzzleX = nX, muzzleY = gunY;
+  for(let i = airParticles.length-1; i >= 0; i--) {
+    const pt = airParticles[i];
+    pt.age += 0.01;
+
+    // Flow field based on position
+    const inChamber = pt.x > startX && pt.x < barrelX && pt.y > gunY - cH/2 && pt.y < gunY + cH/2;
+    const inBarrel = pt.x > barrelX && pt.x < nX && pt.y > gunY - bH/2 && pt.y < gunY + bH/2;
+    const afterMuzzle = pt.x > nX;
+
+    if(inChamber || inBarrel) {
+      const centeringForce = (gunY - pt.y) * 0.05;
+      pt.vy += centeringForce;
+      pt.vx = 3 + d.v0 * 0.01 + (inBarrel ? 2 : 0);
+      // Turbulence
+      if(p.turb) {
+        pt.vx += (Math.random()-0.5) * 0.3;
+        pt.vy += (Math.random()-0.5) * 0.5;
+      }
+    } else if(afterMuzzle) {
+      // Jet expansion
+      const dist = pt.x - nX;
+      const expand = Math.min(dist * 0.05, 3);
+      pt.vy += (pt.y - gunY) * 0.008;
+      pt.vx = Math.max(1, pt.vx - 0.02);
+      pt.vy *= 0.99;
+    } else {
+      // Ambient
+      pt.vx = 1 + Math.random() * 0.5;
+      pt.vy += (Math.random()-0.5)*0.1;
     }
 
-    // 結果の表示
-    document.getElementById('resVolume').innerText = volume.toFixed(2);
-    document.getElementById('resGas').innerText = gasVolume.toFixed(2);
-    document.getElementById('resEnergy').innerText = totalEnergy.toFixed(2);
-    document.getElementById('resVelocity').innerText = velocity.toFixed(1);
-    
-    document.getElementById('resultArea').style.display = 'block';
-}
-</script>
+    pt.x += pt.vx * 0.5;
+    pt.y += pt.vy * 0.5;
+    pt.speed = Math.sqrt(pt.vx**2 + pt.vy**2);
+    pt.age += 0.005;
 
+    if(pt.x > W || pt.y < 0 || pt.y > H || pt.age > 2) {
+      airParticles.splice(i,1);
+      continue;
+    }
+
+    // Color by speed
+    const t = Math.min(pt.speed / 15, 1);
+    const r = Math.floor(0 + t*255);
+    const g = Math.floor(200 - t*130);
+    const b = Math.floor(255 - t*200);
+    const alpha = Math.max(0.1, 1 - pt.age/2);
+
+    ctx.beginPath();
+    ctx.moveTo(pt.x - pt.vx*2, pt.y - pt.vy*2);
+    ctx.lineTo(pt.x, pt.y);
+    ctx.strokeStyle = `rgba(${r},${g},${b},${alpha})`;
+    ctx.lineWidth = 1.2;
+    ctx.stroke();
+  }
+
+  // Velocity vectors
+  if(d) {
+    ctx.font = '9px Share Tech Mono';
+    ctx.fillStyle = 'rgba(0,200,255,0.7)';
+    ctx.fillText(`v₀: ${d.v0.toFixed(1)} m/s`, nX + 10, gunY - bH - 5);
+    ctx.fillStyle = 'rgba(255,120,50,0.7)';
+    ctx.fillText(`P: ${d.pressure.toFixed(2)} MPa`, startX + 10, gunY + cH/2 + 14);
+  }
+
+  // Pressure gradient inside chamber
+  const grad = ctx.createLinearGradient(startX, 0, barrelX, 0);
+  grad.addColorStop(0, 'rgba(255,80,50,0.08)');
+  grad.addColorStop(1, 'rgba(50,150,255,0.04)');
+  ctx.fillStyle = grad;
+  ctx.fillRect(startX, gunY - cH/2, chamberW, cH);
+
+  document.getElementById('overlay2d').innerHTML =
+    `MODE: CFD AIRFLOW (2D)<br>SOLVER: Navier-Stokes<br>PARTICLES: ${airParticles.length}`;
+
+  fpsCounter++;
+  airAnimId = requestAnimationFrame(() => animateAirflow(canvas, d));
+}
+
+// ── RANGE CHART ──
+function clearCanvasRange() {
+  const canvas = document.getElementById('canvasRange');
+  canvas.width = 600; canvas.height = 300;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#0a0a10';
+  ctx.fillRect(0,0,600,300);
+}
+
+function drawRange(d) {
+  if(airAnimId) { cancelAnimationFrame(airAnimId); airAnimId = null; }
+  const parent = document.getElementById('view-range');
+  const W = Math.max(600, parent.clientWidth - 40);
+  const H = Math.max(300, parent.clientHeight - 40);
+  const canvas = document.getElementById('canvasRange');
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext('2d');
+
+  ctx.fillStyle = '#0a0a10';
+  ctx.fillRect(0,0,W,H);
+
+  const pad = { l:60, r:40, t:30, b:50 };
+  const pw = W - pad.l - pad.r, ph = H - pad.t - pad.b;
+  const traj = d.traj;
+  const maxX = traj[traj.length-1].x;
+  const maxY = d.maxAlt;
+
+  // Grid
+  ctx.strokeStyle = 'rgba(50,50,80,0.4)';
+  ctx.lineWidth = 0.5;
+  for(let i=0;i<=10;i++) {
+    const gx = pad.l + pw * i/10;
+    ctx.beginPath(); ctx.moveTo(gx,pad.t); ctx.lineTo(gx,pad.t+ph); ctx.stroke();
+    const gy = pad.t + ph * i/10;
+    ctx.beginPath(); ctx.moveTo(pad.l,gy); ctx.lineTo(pad.l+pw,gy); ctx.stroke();
+  }
+
+  // Axes
+  ctx.strokeStyle = 'rgba(100,100,150,0.8)';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(pad.l,pad.t); ctx.lineTo(pad.l,pad.t+ph); ctx.lineTo(pad.l+pw,pad.t+ph); ctx.stroke();
+
+  // Axis labels
+  ctx.font = '10px Share Tech Mono';
+  ctx.fillStyle = 'rgba(120,120,160,0.8)';
+  for(let i=0;i<=5;i++) {
+    const val = (maxX * i/5).toFixed(1);
+    const x = pad.l + pw * i/5;
+    ctx.fillText(val+'m', x-15, pad.t+ph+16);
+    const yval = (maxY * (5-i)/5).toFixed(1);
+    const y = pad.t + ph * i/5;
+    ctx.fillText(yval+'m', 2, y+4);
+  }
+  ctx.fillStyle = 'rgba(100,180,255,0.8)';
+  ctx.fillText('水平距離 (m)', pad.l + pw/2 - 30, H - 8);
+  ctx.save(); ctx.translate(14, pad.t + ph/2); ctx.rotate(-Math.PI/2);
+  ctx.fillText('高度 (m)', -20, 0); ctx.restore();
+
+  // Trajectory path (gradient)
+  const lineGrad = ctx.createLinearGradient(pad.l, 0, pad.l+pw, 0);
+  lineGrad.addColorStop(0, '#3d8ef8');
+  lineGrad.addColorStop(0.5, '#00d4ff');
+  lineGrad.addColorStop(1, '#ff6b35');
+
+  ctx.beginPath();
+  traj.forEach((pt,i) => {
+    const tx = pad.l + (pt.x/maxX) * pw;
+    const ty = pad.t + ph - (pt.y / Math.max(maxY,0.01)) * ph;
+    i===0 ? ctx.moveTo(tx,ty) : ctx.lineTo(tx,ty);
+  });
+  ctx.strokeStyle = lineGrad;
+  ctx.lineWidth = 2.5;
+  ctx.stroke();
+
+  // Fill under curve
+  ctx.beginPath();
+  traj.forEach((pt,i) => {
+    const tx = pad.l + (pt.x/maxX) * pw;
+    const ty = pad.t + ph - (pt.y / Math.max(maxY,0.01)) * ph;
+    i===0 ? ctx.moveTo(tx,ty) : ctx.lineTo(tx,ty);
+  });
+  ctx.lineTo(pad.l+pw, pad.t+ph);
+  ctx.lineTo(pad.l, pad.t+ph);
+  ctx.closePath();
+  ctx.fillStyle = 'rgba(61,142,248,0.08)';
+  ctx.fill();
+
+  // Apex marker
+  let apexI = 0;
+  traj.forEach((pt,i) => { if(pt.y > traj[apexI].y) apexI = i; });
+  const apex = traj[apexI];
+  const apexX = pad.l + (apex.x/maxX)*pw;
+  const apexY = pad.t + ph - (apex.y/Math.max(maxY,0.01))*ph;
+  ctx.beginPath(); ctx.arc(apexX, apexY, 5, 0, Math.PI*2);
+  ctx.fillStyle = '#00d4ff'; ctx.fill();
+  ctx.font = '9px Share Tech Mono'; ctx.fillStyle = '#00d4ff';
+  ctx.fillText(`↑ ${apex.y.toFixed(1)}m`, apexX+8, apexY-4);
+
+  // Landing marker
+  const lastPt = traj[traj.length-1];
+  const lx = pad.l + pw;
+  ctx.beginPath(); ctx.arc(lx, pad.t+ph, 5, 0, Math.PI*2);
+  ctx.fillStyle = '#ff6b35'; ctx.fill();
+  ctx.fillStyle = '#ff6b35'; ctx.font = '10px Share Tech Mono';
+  ctx.fillText(`⊗ ${maxX.toFixed(1)} m`, lx-20, pad.t+ph+28);
+
+  // Velocity color bar legend
+  const lb = ctx.createLinearGradient(pad.l, 0, pad.l+pw, 0);
+  lb.addColorStop(0,'#3d8ef8'); lb.addColorStop(0.5,'#00d4ff'); lb.addColorStop(1,'#ff6b35');
+  ctx.fillStyle = lb;
+  ctx.fillRect(pad.l, pad.t-20, pw, 5);
+  ctx.font = '9px Share Tech Mono'; ctx.fillStyle = 'rgba(120,180,220,0.7)';
+  ctx.fillText('低速', pad.l, pad.t-22);
+  ctx.fillText('高速', pad.l+pw-24, pad.t-22);
+
+  // Title
+  ctx.font = 'bold 12px Rajdhani, sans-serif';
+  ctx.fillStyle = 'rgba(180,210,255,0.9)';
+  ctx.fillText(`弾道軌跡シミュレーション — 飛距離: ${maxX.toFixed(2)} m | 最高高度: ${maxY.toFixed(2)} m`, pad.l+4, pad.t-6);
+
+  // Angle indicator arc
+  const angleRad = getParams().angle;
+  const arx = pad.l + 18, ary = pad.t+ph;
+  ctx.beginPath();
+  ctx.arc(arx, ary, 18, -angleRad - 0.05, 0.05);
+  ctx.strokeStyle = 'rgba(255,200,50,0.6)';
+  ctx.lineWidth = 1.5; ctx.stroke();
+  ctx.font = '9px Share Tech Mono'; ctx.fillStyle = 'rgba(255,200,50,0.7)';
+  ctx.fillText((angleRad*180/Math.PI).toFixed(0)+'°', arx+12, ary-6);
+}
+
+// ── CANVAS RESIZE ──
+window.addEventListener('resize', () => {
+  if(currentView==='3d') draw3D();
+  else if(currentView==='2d' && simData) startAirflow(simData);
+  else if(currentView==='range' && simData) drawRange(simData);
+});
+
+// Mouse drag on 3D
+const c3 = document.getElementById('canvas3d');
+c3.addEventListener('mousedown', e => { dragging=true; lastMX=e.clientX; lastMY=e.clientY; });
+window.addEventListener('mouseup', () => dragging=false);
+window.addEventListener('mousemove', e => {
+  if(!dragging || currentView!=='3d') return;
+  rot.y += (e.clientX-lastMX)*0.005;
+  rot.x += (e.clientY-lastMY)*0.005;
+  lastMX=e.clientX; lastMY=e.clientY;
+  draw3D();
+});
+
+// ── INIT ──
+window.addEventListener('load', () => {
+  setTimeout(() => {
+    draw3D();
+    addLog('[OK] 3Dビューワー初期化完了', 'ok');
+  }, 100);
+});
+</script>
 </body>
 </html>
